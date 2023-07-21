@@ -1,0 +1,13 @@
+[package]
+name = "salut-derive"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+salut-core = { path = "../salut-core" }
+proc-macro2 = { workspace = true }
+syn = { version = "2.0.26", features = ["full"] }
+darling = "0.20.3"
+
+[lib]
+proc-macro = true
