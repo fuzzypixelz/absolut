@@ -3,6 +3,33 @@
 version = 3
 
 [[package]]
+name = "absolut"
+version = "0.1.0"
+dependencies = [
+ "absolut-core",
+ "absolut-derive",
+]
+
+[[package]]
+name = "absolut-core"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "z3",
+]
+
+[[package]]
+name = "absolut-derive"
+version = "0.1.0"
+dependencies = [
+ "absolut-core",
+ "darling",
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -305,33 +332,6 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
-name = "salut"
-version = "0.1.0"
-dependencies = [
- "salut-core",
- "salut-derive",
-]
-
-[[package]]
-name = "salut-core"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "z3",
-]
-
-[[package]]
-name = "salut-derive"
-version = "0.1.0"
-dependencies = [
- "darling",
- "proc-macro2",
- "salut-core",
- "syn",
-]
 
 [[package]]
 name = "shlex"

@@ -8,7 +8,7 @@ use syn::{
 
 use darling::{FromMeta, export::NestedMeta};
 
-use salut_core::{Class, SimdTableInputBuilder};
+use absolut_core::{Class, SimdTableInputBuilder};
 
 const VARIANT_ATTR_MATCHES: &str = "matches";
 const VARIANT_ATTR_WILDCARD: &str = "wildcard";

@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "salut-core",
-    "salut-derive",
+    "absolut-core",
+    "absolut-derive",
 ]
 
 [package]
-name = "salut"
+name = "absolut"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,5 +14,5 @@ quote = "1.0.31"
 proc-macro2 = "1.0.66"
 
 [dependencies]
-salut-core = { path = "salut-core" }
-salut-derive = { path = "salut-derive" }
+absolut-core = { path = "absolut-core" }
+absolut-derive = { path = "absolut-derive" }

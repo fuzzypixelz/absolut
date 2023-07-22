@@ -165,7 +165,7 @@ impl SimdTableInput {
                         )*
                     }
 
-                    impl ::salut_core::SimdTable<#lanes> for #ident {
+                    impl ::absolut_core::SimdTable<#lanes> for #ident {
                         const LO: [u8; #lanes] = [#(#lo, )*];
                         const HI: [u8; #lanes] = [#(#hi, )*];
                     }
