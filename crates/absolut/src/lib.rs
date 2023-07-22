@@ -1,5 +1,11 @@
-pub use absolut_core::SimdTable;
-pub use absolut_derive::simd_table;
+extern crate self as absolut;
+
+pub use absolut_macros::simd_table;
+
+pub trait SimdTable<const LANES: usize> {
+    const LO: [u8; LANES];
+    const HI: [u8; LANES];
+}
 
 #[cfg(test)]
 mod tests {

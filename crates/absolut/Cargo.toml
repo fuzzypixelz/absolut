@@ -1,0 +1,11 @@
+[package]
+name = "absolut"
+description = "Autogenerate Bytewise SIMD LUTs"
+version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+absolut-macros = { path = "../absolut-macros", version = "0.1.1" }

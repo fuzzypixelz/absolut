@@ -4,29 +4,20 @@ version = 3
 
 [[package]]
 name = "absolut"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "absolut-core",
- "absolut-derive",
+ "absolut-macros",
 ]
 
 [[package]]
-name = "absolut-core"
-version = "0.1.0"
+name = "absolut-macros"
+version = "0.1.1"
 dependencies = [
- "proc-macro2",
- "quote",
- "z3",
-]
-
-[[package]]
-name = "absolut-derive"
-version = "0.1.0"
-dependencies = [
- "absolut-core",
  "darling",
  "proc-macro2",
+ "quote",
  "syn",
+ "z3",
 ]
 
 [[package]]
@@ -88,12 +79,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "cc"
-version = "1.0.79"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50d30906286121d95be3d479533b458f87493b30a4b5f79a607db8f5d11aa91f"
-
-[[package]]
 name = "cexpr"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -132,15 +117,6 @@ dependencies = [
  "textwrap",
  "unicode-width",
  "vec_map",
-]
-
-[[package]]
-name = "cmake"
-version = "0.1.50"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a31c789563b815f77f4250caee12365734369f942439b7defd71e18a48197130"
-dependencies = [
- "cc",
 ]
 
 [[package]]
@@ -353,9 +329,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "syn"
-version = "2.0.26"
+version = "2.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45c3457aacde3c65315de5031ec191ce46604304d2446e803d71ade03308d970"
+checksum = "b60f673f44a8255b9c8c657daf66a596d435f2da81a555b06dc644d080ba45e0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -462,5 +438,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c82dcbc58be4bf1994c520066cb2bd6c3d36aed0fdc57244f34d277421986a6"
 dependencies = [
  "bindgen",
- "cmake",
 ]

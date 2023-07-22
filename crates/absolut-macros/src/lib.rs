@@ -1,6 +1,16 @@
+extern crate proc_macro;
+
 use std::{collections::HashMap, iter};
 
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro::TokenStream;
+use proc_macro2::{Ident, Span};
+
+use syn::{
+    parse::{Parse, ParseStream},
+    parse_macro_input, Error, Expr, Lit, LitByte, Token, Variant, ItemEnum,
+};
+
+use darling::{FromMeta, export::NestedMeta};
 
 use quote::quote;
 
@@ -9,12 +19,171 @@ use z3::{
     Config, Context, Model, SatResult, Solver, Sort,
 };
 
-pub trait SimdTable<const LANES: usize> {
-    const LO: [u8; LANES];
-    const HI: [u8; LANES];
+const VARIANT_ATTR_MATCHES: &str = "matches";
+const VARIANT_ATTR_WILDCARD: &str = "wildcard";
+
+#[proc_macro_attribute]
+pub fn simd_table(args: TokenStream, tokens: TokenStream) -> TokenStream {
+    // FIXME(fuzzypixelz): we don't add back visibility and attributes to `item`
+
+    let args = match NestedMeta::parse_meta_list(args.into()) {
+        Ok(args) => args,
+        Err(err) => return err.into_compile_error().into()
+    };
+
+    let args = match Arguments::from_list(&args) {
+        Ok(args) => args,
+        Err(err) => return TokenStream::from(err.write_errors())
+    };
+
+    let item = parse_macro_input!(tokens as ItemEnum);
+
+    let mut builder = SimdTableInputBuilder::with_capacity(item.variants.len());
+    let mut wildcard = None;
+
+    for Variant {
+        attrs,
+        ident,
+        fields: _,
+        discriminant,
+    } in &item.variants
+    {
+        let class = if let Some((_, expr)) = discriminant {
+            let Expr::Lit(lit) = expr else {
+                return Error::new_spanned(expr, "variant values can only be literals")
+                    .into_compile_error()
+                    .into()
+            };
+
+            let value = match &lit.lit {
+                Lit::Byte(byte) => byte.value(),
+                Lit::Int(int) => match int.base10_parse::<u8>() {
+                    Ok(byte) => byte,
+                    Err(err) => return err.into_compile_error().into(),
+                },
+                _ => {
+                    return Error::new_spanned(
+                        lit,
+                        "variant values can only be byte literals or integer literals",
+                    )
+                    .into_compile_error()
+                    .into()
+                }
+            };
+
+            Class::with_value(ident.to_string(), value)
+        } else {
+            Class::new(ident.to_string())
+        };
+
+        for attr in attrs {
+            if attr.path().is_ident(VARIANT_ATTR_MATCHES) {
+                let bytes = match attr.parse_args_with(Bytes::parse) {
+                    Ok(bytes) => bytes,
+                    Err(err) => return err.into_compile_error().into(),
+                };
+
+                match bytes {
+                    Bytes::Singleton(byte) => builder.insert(byte, class.clone()),
+                    Bytes::List(bytes) => {
+                        for byte in bytes {
+                            builder.insert(byte, class.clone())
+                        }
+                    }
+                    Bytes::Range { start, end } => {
+                        for byte in start..end {
+                            builder.insert(byte, class.clone())
+                        }
+                    }
+                }
+            } else if attr.path().is_ident(VARIANT_ATTR_WILDCARD) {
+                // FIXME(fuzzypixelz): we don't check that `wildcard` has no arguments
+
+                if wildcard.is_some() {
+                    return Error::new_spanned(attr, "attribute wildcard can only be set once")
+                        .into_compile_error()
+                        .into();
+                }
+
+                wildcard = Some(class.clone())
+            } else {
+                return Error::new_spanned(attr, "invalid attribute")
+                    .into_compile_error()
+                    .into();
+            }
+        }
+    }
+
+    let Some(wildcard) = wildcard else {
+        return Error::new_spanned(item, "variant values can only be literals")
+                .into_compile_error()
+                .into() 
+    };
+
+    if args.powers_of_two.is_some() {
+        builder.set_powers_of_two();
+    }
+
+    let input = builder.build(wildcard, item.ident.clone(), args.lanes);
+
+    let Some(syntax) = input.generate() else {
+        return Error::new_spanned(item, "table is unsatisfiable")
+            .into_compile_error()
+            .into();
+    };
+
+    let vis = item.vis;
+    let attrs = item.attrs;
+
+    quote!(#(#attrs)* #[repr(u8)] #vis #syntax).into()
 }
 
-pub struct SimdTableInput {
+#[derive(Debug, Default, FromMeta)]
+struct Arguments {
+    #[darling(rename = "LANES")]
+    lanes: usize,
+    powers_of_two: Option<()>,
+}
+
+#[derive(Debug)]
+enum Bytes {
+    Singleton(u8),
+    List(Vec<u8>),
+    Range { start: u8, end: u8 },
+}
+
+impl Parse for Bytes {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(LitByte) {
+            let byte = input.parse::<LitByte>()?.value();
+
+            let lookahead = input.lookahead1();
+
+            if lookahead.peek(Token![..]) {
+                input.parse::<Token![..]>()?;
+                let start = byte;
+                let end = input.parse::<LitByte>()?.value();
+
+                Ok(Self::Range { start, end })
+            } else if lookahead.peek(Token![|]) {
+                let mut bytes = vec![byte];
+                while input.lookahead1().peek(Token![|]) {
+                    input.parse::<Token![|]>()?;
+                    bytes.push(input.parse::<LitByte>()?.value());
+                }
+
+                Ok(Self::List(bytes))
+            } else {
+                Ok(Self::Singleton(byte))
+            }
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
+struct SimdTableInput {
     table: HashMap<u8, Class>,
     wildcard: Class,
     ident: Ident,
@@ -23,7 +192,7 @@ pub struct SimdTableInput {
 }
 
 impl SimdTableInput {
-    pub fn generate(self) -> Option<TokenStream> {
+    pub fn generate(self) -> Option<proc_macro2::TokenStream> {
         fn nibble_hi<'ctx>(ctx: &'ctx Context, bv: &BV<'ctx>) -> BV<'ctx> {
             bv.bvlshr(&BV::from_u64(ctx, 4, 8)).extract(3, 0)
         }
@@ -165,7 +334,7 @@ impl SimdTableInput {
                         )*
                     }
 
-                    impl ::absolut_core::SimdTable<#lanes> for #ident {
+                    impl ::absolut::SimdTable<#lanes> for #ident {
                         const LO: [u8; #lanes] = [#(#lo, )*];
                         const HI: [u8; #lanes] = [#(#hi, )*];
                     }
@@ -177,7 +346,7 @@ impl SimdTableInput {
     }
 }
 
-pub struct SimdTableInputBuilder {
+struct SimdTableInputBuilder {
     table: HashMap<u8, Class>,
     powers_of_two: bool,
 }
@@ -215,7 +384,7 @@ impl SimdTableInputBuilder {
 }
 
 #[derive(Clone)]
-pub struct Class {
+struct Class {
     name: String,
     value: Option<u8>,
 }

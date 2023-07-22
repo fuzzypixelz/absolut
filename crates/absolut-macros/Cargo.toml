@@ -1,0 +1,18 @@
+[package]
+name = "absolut-macros"
+description = "Implementation details of absolut"
+version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.66"
+syn = { version = "2.0.26" }
+darling = "0.20.3"
+quote = "1.0.31"
+z3 = { version = "0.11.2", features = ["static-link-z3"]  }
