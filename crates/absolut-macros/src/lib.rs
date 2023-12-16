@@ -1,44 +1,31 @@
 extern crate proc_macro;
 
-use std::{collections::HashMap, iter};
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+};
 
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Error, Expr, Lit, LitByte, Token, Variant, ItemEnum,
+    parse_macro_input, Error, Expr, ItemEnum, Lit, LitByte, Token, Variant,
 };
-
-use darling::{FromMeta, export::NestedMeta};
 
 use quote::quote;
 
-use z3::{
-    ast::{Array, Ast, Bool, BV},
-    Config, Context, Model, SatResult, Solver, Sort,
-};
-
 const VARIANT_ATTR_MATCHES: &str = "matches";
 const VARIANT_ATTR_WILDCARD: &str = "wildcard";
+const LANES: usize = 16;
 
 #[proc_macro_attribute]
-pub fn simd_table(args: TokenStream, tokens: TokenStream) -> TokenStream {
+pub fn simd_table(_args: TokenStream, tokens: TokenStream) -> TokenStream {
     // FIXME(fuzzypixelz): we don't add back visibility and attributes to `item`
-
-    let args = match NestedMeta::parse_meta_list(args.into()) {
-        Ok(args) => args,
-        Err(err) => return err.into_compile_error().into()
-    };
-
-    let args = match Arguments::from_list(&args) {
-        Ok(args) => args,
-        Err(err) => return TokenStream::from(err.write_errors())
-    };
 
     let item = parse_macro_input!(tokens as ItemEnum);
 
-    let mut builder = SimdTableInputBuilder::with_capacity(item.variants.len());
+    let mut table = HashMap::with_capacity(item.variants.len());
     let mut wildcard = None;
 
     for Variant {
@@ -52,7 +39,7 @@ pub fn simd_table(args: TokenStream, tokens: TokenStream) -> TokenStream {
             let Expr::Lit(lit) = expr else {
                 return Error::new_spanned(expr, "variant values can only be literals")
                     .into_compile_error()
-                    .into()
+                    .into();
             };
 
             let value = match &lit.lit {
@@ -76,57 +63,46 @@ pub fn simd_table(args: TokenStream, tokens: TokenStream) -> TokenStream {
             Class::new(ident.to_string())
         };
 
-        for attr in attrs {
-            if attr.path().is_ident(VARIANT_ATTR_MATCHES) {
-                let bytes = match attr.parse_args_with(Bytes::parse) {
-                    Ok(bytes) => bytes,
-                    Err(err) => return err.into_compile_error().into(),
-                };
+        assert_eq!(attrs.len(), 1); // FIXME
+        let attr = attrs.first().unwrap();
 
-                match bytes {
-                    Bytes::Singleton(byte) => builder.insert(byte, class.clone()),
-                    Bytes::List(bytes) => {
-                        for byte in bytes {
-                            builder.insert(byte, class.clone())
-                        }
-                    }
-                    Bytes::Range { start, end } => {
-                        for byte in start..end {
-                            builder.insert(byte, class.clone())
-                        }
-                    }
-                }
-            } else if attr.path().is_ident(VARIANT_ATTR_WILDCARD) {
-                // FIXME(fuzzypixelz): we don't check that `wildcard` has no arguments
+        if attr.path().is_ident(VARIANT_ATTR_MATCHES) {
+            let bytes = match attr.parse_args_with(Bytes::parse) {
+                Ok(bytes) => bytes,
+                Err(err) => return err.into_compile_error().into(),
+            };
 
-                if wildcard.is_some() {
-                    return Error::new_spanned(attr, "attribute wildcard can only be set once")
-                        .into_compile_error()
-                        .into();
-                }
+            table.insert(class, bytes);
+        } else if attr.path().is_ident(VARIANT_ATTR_WILDCARD) {
+            // FIXME(fuzzypixelz): we don't check that `wildcard` has no arguments
 
-                wildcard = Some(class.clone())
-            } else {
-                return Error::new_spanned(attr, "invalid attribute")
+            if wildcard.is_some() {
+                return Error::new_spanned(attr, "attribute wildcard can only be set once")
                     .into_compile_error()
                     .into();
             }
+
+            wildcard = Some(class)
+        } else {
+            return Error::new_spanned(attr, "invalid attribute")
+                .into_compile_error()
+                .into();
         }
     }
 
     let Some(wildcard) = wildcard else {
         return Error::new_spanned(item, "variant values can only be literals")
-                .into_compile_error()
-                .into() 
+            .into_compile_error()
+            .into();
     };
 
-    if args.powers_of_two.is_some() {
-        builder.set_powers_of_two();
-    }
+    let input2 = SimdTableInput {
+        table,
+        wildcard,
+        ident: item.ident.clone(),
+    };
 
-    let input = builder.build(wildcard, item.ident.clone(), args.lanes);
-
-    let Some(syntax) = input.generate() else {
+    let Some(syntax) = input2.generate() else {
         return Error::new_spanned(item, "table is unsatisfiable")
             .into_compile_error()
             .into();
@@ -138,18 +114,32 @@ pub fn simd_table(args: TokenStream, tokens: TokenStream) -> TokenStream {
     quote!(#(#attrs)* #[repr(u8)] #vis #syntax).into()
 }
 
-#[derive(Debug, Default, FromMeta)]
-struct Arguments {
-    #[darling(rename = "LANES")]
-    lanes: usize,
-    powers_of_two: Option<()>,
-}
+// #[derive(Debug, Default, FromMeta)]
+// struct Arguments {
+//     #[darling(rename = "LANES")]
+//     lanes: usize,
+//     powers_of_two: Option<()>,
+// }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Bytes {
     Singleton(u8),
     List(Vec<u8>),
-    Range { start: u8, end: u8 },
+    /// Inclusive range of bytes, i.e. `start..=end`.
+    Range {
+        start: u8,
+        end: u8,
+    },
+}
+
+impl Bytes {
+    fn into_vec(self) -> Vec<u8> {
+        match self {
+            Bytes::Singleton(b) => vec![b],
+            Bytes::List(v) => v,
+            Bytes::Range { start, end } => (start..=end).collect(),
+        }
+    }
 }
 
 impl Parse for Bytes {
@@ -183,207 +173,7 @@ impl Parse for Bytes {
     }
 }
 
-struct SimdTableInput {
-    table: HashMap<u8, Class>,
-    wildcard: Class,
-    ident: Ident,
-    lanes: usize,
-    powers_of_two: bool,
-}
-
-impl SimdTableInput {
-    pub fn generate(self) -> Option<proc_macro2::TokenStream> {
-        fn nibble_hi<'ctx>(ctx: &'ctx Context, bv: &BV<'ctx>) -> BV<'ctx> {
-            bv.bvlshr(&BV::from_u64(ctx, 4, 8)).extract(3, 0)
-        }
-
-        fn nibble_lo<'ctx>(ctx: &'ctx Context, bv: &BV<'ctx>) -> BV<'ctx> {
-            bv.bvand(&BV::from_u64(ctx, 0b1111, 8)).extract(3, 0)
-        }
-
-        fn lookup<'ctx>(
-            ctx: &'ctx Context,
-            table_lo: &Array<'ctx>,
-            table_hi: &Array<'ctx>,
-            bv: &BV<'ctx>,
-        ) -> BV<'ctx> {
-            table_lo.select(&nibble_lo(ctx, bv)).as_bv().unwrap()
-                & table_hi.select(&nibble_hi(ctx, bv)).as_bv().unwrap()
-        }
-
-        fn is_power_of_two<'ctx>(ctx: &'ctx Context, bv: &BV<'ctx>) -> Bool<'ctx> {
-            let zero = BV::from_u64(ctx, 0, 8);
-            let one = BV::from_u64(ctx, 1, 8);
-
-            bv.bvand(&bv.bvsub(&one))._eq(&zero)
-        }
-
-        fn bytes<'ctx>(
-            ctx: &'ctx Context,
-            model: &'ctx Model<'ctx>,
-            table: Array<'ctx>,
-            lanes: usize,
-        ) -> impl Iterator<Item = u8> + 'ctx {
-            let table = model.eval(&table, true).unwrap();
-
-            (0..lanes).map(move |i| {
-                let tmp = table
-                    .select(&BV::from_u64(ctx, i as u64, 4))
-                    .as_bv()
-                    .unwrap();
-
-                model.eval(&tmp, true).unwrap().as_u64().unwrap() as u8
-            })
-        }
-
-        // NOTE(fuzzypixelz): the "trace" param is false by default but a ".z3-trace"
-        // is still generated. See: https://microsoft.github.io/z3guide/programming/Parameters/
-        let ctx = &Context::new(&Config::default());
-        let solver = Solver::new(ctx);
-
-        let variables = self
-            .table
-            .values()
-            .map(|class| {
-                let bv = BV::new_const(ctx, class.name.as_str(), 8);
-                (class.name.as_str(), bv)
-            })
-            .collect::<HashMap<_, _>>();
-
-        let wildcard_bv = BV::new_const(ctx, self.wildcard.name.as_str(), 8);
-
-        for (lhs, rhs) in variables.iter().flat_map(|lhs| {
-            iter::repeat(lhs).zip(variables.iter().filter(move |rhs| rhs.0 != lhs.0))
-        }) {
-            solver.assert(&lhs.1._eq(rhs.1).not())
-        }
-
-        for (_, bv) in variables.iter() {
-            solver.assert(&bv._eq(&wildcard_bv).not())
-        }
-
-        let table_lo = Array::new_const(
-            ctx,
-            "table_lo",
-            &Sort::bitvector(ctx, 4),
-            &Sort::bitvector(ctx, 8),
-        );
-
-        let table_hi = Array::new_const(
-            ctx,
-            "table_hi",
-            &Sort::bitvector(ctx, 4),
-            &Sort::bitvector(ctx, 8),
-        );
-
-        for (byte, class) in self.table.iter() {
-            let bv_byte = BV::from_u64(ctx, *byte as u64, 8);
-            let bv_target = variables.get(class.name.as_str()).unwrap();
-
-            solver.assert(&lookup(ctx, &table_lo, &table_hi, &bv_byte)._eq(bv_target));
-
-            if self.powers_of_two {
-                solver.assert(&is_power_of_two(ctx, bv_target))
-            }
-
-            if let Some(value) = class.value {
-                let bv_value = BV::from_u64(ctx, value as u64, 8);
-                solver.assert(&bv_target._eq(&bv_value));
-            }
-        }
-
-        for byte in (0..128).filter(|b| !self.table.contains_key(b)) {
-            let byte_bv = BV::from_u64(ctx, byte as u64, 8);
-
-            solver.assert(&lookup(ctx, &table_lo, &table_hi, &byte_bv)._eq(&wildcard_bv));
-
-            if self.powers_of_two {
-                solver.assert(&is_power_of_two(ctx, &wildcard_bv))
-            }
-
-            if let Some(value) = self.wildcard.value {
-                let value_bv = BV::from_u64(ctx, value as u64, 8);
-                solver.assert(&wildcard_bv._eq(&value_bv));
-            }
-        }
-
-        match solver.check() {
-            SatResult::Unsat | SatResult::Unknown => None,
-            SatResult::Sat => {
-                let model = solver.get_model().unwrap();
-
-                let ident = self.ident;
-                let lanes = self.lanes;
-
-                let variants = variables
-                    .into_iter()
-                    .chain(iter::once((self.wildcard.name.as_str(), wildcard_bv)))
-                    .map(|(name, bv)| {
-                        let name = Ident::new(name, Span::call_site());
-                        let byte = model.eval(&bv, true).unwrap().as_u64().unwrap() as u8;
-
-                        quote!(#name = #byte)
-                    });
-
-                let lo = bytes(ctx, &model, table_lo, self.lanes);
-                let hi = bytes(ctx, &model, table_hi, self.lanes);
-
-                let syntax = quote! {
-                    enum #ident {
-                        #(#variants,
-                        )*
-                    }
-
-                    impl ::absolut::SimdTable<#lanes> for #ident {
-                        const LO: [u8; #lanes] = [#(#lo, )*];
-                        const HI: [u8; #lanes] = [#(#hi, )*];
-                    }
-                };
-
-                Some(syntax)
-            }
-        }
-    }
-}
-
-struct SimdTableInputBuilder {
-    table: HashMap<u8, Class>,
-    powers_of_two: bool,
-}
-
-impl SimdTableInputBuilder {
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            table: HashMap::with_capacity(capacity),
-            powers_of_two: false,
-        }
-    }
-
-    pub fn insert(&mut self, byte: u8, class: Class) {
-        let _ = self.table.insert(byte, class);
-    }
-
-    pub fn set_powers_of_two(&mut self) {
-        self.powers_of_two = true;
-    }
-
-    pub fn build(self, wildcard: Class, ident: Ident, lanes: usize) -> SimdTableInput {
-        let SimdTableInputBuilder {
-            table,
-            powers_of_two,
-        } = self;
-
-        SimdTableInput {
-            table,
-            powers_of_two,
-            wildcard,
-            ident,
-            lanes,
-        }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Class {
     name: String,
     value: Option<u8>,
@@ -399,5 +189,119 @@ impl Class {
             name,
             value: Some(value),
         }
+    }
+}
+
+#[derive(Debug)]
+struct SimdTableInput {
+    table: HashMap<Class, Bytes>,
+    wildcard: Class,
+    ident: Ident,
+    // lanes: usize,
+    // powers_of_two: bool,
+}
+
+impl SimdTableInput {
+    fn generate(self) -> Option<proc_macro2::TokenStream> {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        struct Nibbles {
+            lo: u8,
+            hi: u8,
+        }
+
+        impl Nibbles {
+            fn from_byte(byte: u8) -> Self {
+                Self {
+                    lo: byte & 0b1111,
+                    hi: byte >> 4,
+                }
+            }
+
+            fn into_byte(self) -> u8 {
+                self.lo | (self.hi << 4)
+            }
+        }
+
+        assert!(self.table.len() /* wildcard */ <= 8);
+
+        fn is_product(bytes: &[u8]) -> bool {
+            let bytes = bytes
+                .iter()
+                .map(|b| Nibbles::from_byte(*b))
+                .collect::<HashSet<_>>();
+            let (mut los, mut his) = (HashSet::new(), HashSet::new());
+            let mut missing = HashSet::new();
+
+            for Nibbles { lo, hi } in bytes.iter().copied() {
+                if !los.contains(&lo) {
+                    for lo in los.iter().copied() {
+                        let n = Nibbles { lo, hi };
+                        if !bytes.contains(&n) {
+                            missing.insert(n.into_byte());
+                        }
+                    }
+
+                    let _ = los.insert(lo);
+                }
+
+                if !his.contains(&hi) {
+                    for hi in his.iter().copied() {
+                        let n = Nibbles { lo, hi };
+                        if !bytes.contains(&n) {
+                            missing.insert(n.into_byte());
+                        }
+                    }
+
+                    let _ = his.insert(hi);
+                }
+            }
+
+            missing.is_empty()
+        }
+
+        let ident = self.ident;
+
+        let mut table_lo = [0_u8; LANES];
+        let mut table_hi = [0_u8; LANES];
+
+        for (i, (_, bytes)) in self.table.iter().enumerate() {
+            let bytes = bytes.clone().into_vec();
+
+            if !is_product(&bytes) {
+                return None;
+            }
+
+            for byte in bytes {
+                let Nibbles { lo, hi } = Nibbles::from_byte(byte);
+
+                table_lo[lo as usize] |= 1 << i;
+                table_hi[hi as usize] |= 1 << i;
+            }
+        }
+
+        let variants = self
+            .table
+            .keys()
+            .enumerate()
+            .map(|(i, class)| (class.name.as_str(), 1_u8 << i))
+            .chain(iter::once((self.wildcard.name.as_str(), 0_u8)))
+            .map(|(name, value)| {
+                let name = Ident::new(name, Span::call_site());
+                quote!(#name = #value)
+            });
+
+        let syntax = quote! {
+            enum #ident {
+                #(#variants,
+                )*
+            }
+
+            impl ::absolut::SimdTable<#LANES> for #ident {
+                const LO: [u8; #LANES] = [#(#table_lo, )*];
+                const HI: [u8; #LANES] = [#(#table_hi, )*];
+            }
+        };
+
+        Some(syntax)
     }
 }
