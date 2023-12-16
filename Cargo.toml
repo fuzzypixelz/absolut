@@ -1,11 +1,10 @@
 [workspace]
-members = [
-    "crates/*",
-]
+resolver = "2"
+members = ["crates/*"]
 
 [workspace.package]
 repository = "https://github.com/fuzzypixelz/absolut"
-authors = ["Mahmoud Mazouz <mazouz.mahmoud@outlook.com>"]
+authors = ["Mahmoud Mazouz <hello@fuzzypixelz.com>"]
 version = "0.1.1"
 license-file = "LICENSE"
 readme = "README.md"

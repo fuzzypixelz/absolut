@@ -15,4 +15,9 @@ proc-macro2 = "1.0.66"
 syn = { version = "2.0.26" }
 darling = "0.20.3"
 quote = "1.0.31"
-z3 = { version = "0.11.2", features = ["static-link-z3"]  }
+varisat = { version = "0.2.2", optional = true }
+# z3 = { version = "0.12.1", features = ["static-link-z3"] }
+
+[features]
+default = ["general"]
+general = ["dep:varisat"]
