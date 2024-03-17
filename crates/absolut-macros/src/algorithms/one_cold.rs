@@ -282,7 +282,7 @@ impl SimdTableInput {
                 )*
             }
 
-            impl ::absolut::SimdTable<#LANES> for #ident {
+            impl ::absolut::OneCold<#LANES> for #ident {
                 const LO: [u8; #LANES] = [#(#table_lo, )*];
                 const HI: [u8; #LANES] = [#(#table_hi, )*];
             }

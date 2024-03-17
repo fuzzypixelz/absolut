@@ -288,7 +288,7 @@ impl SimdTableInput {
                         )*
                     }
 
-                    impl ::absolut::SimdTable<16> for #ident {
+                    impl ::absolut::OneHot<16> for #ident {
                         const LO: [u8; 16] = [#(#lo, )*];
                         const HI: [u8; 16] = [#(#hi, )*];
                     }

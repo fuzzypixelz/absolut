@@ -14,6 +14,11 @@ pub fn one_cold(args: TokenStream, tokens: TokenStream) -> TokenStream {
     crate::algorithms::one_cold::one_cold(args, tokens)
 }
 
+#[proc_macro_attribute]
+pub fn composite(args: TokenStream, tokens: TokenStream) -> TokenStream {
+    crate::algorithms::composite::composite(args, tokens)
+}
+
 #[cfg(feature = "general")]
 #[proc_macro_attribute]
 pub fn general(args: TokenStream, tokens: TokenStream) -> TokenStream {
