@@ -5,14 +5,14 @@ pub use absolut_macros::general;
 pub use absolut_macros::one_cold;
 pub use absolut_macros::one_hot;
 
-pub trait OneCold<const LANES: usize> {
-    const LO: [u8; LANES];
-    const HI: [u8; LANES];
+pub trait OneCold {
+    const LO: [u8; 16];
+    const HI: [u8; 16];
 }
 
-pub trait OneHot<const LANES: usize> {
-    const LO: [u8; LANES];
-    const HI: [u8; LANES];
+pub trait OneHot {
+    const LO: [u8; 16];
+    const HI: [u8; 16];
 }
 
 pub trait Composite {
@@ -146,11 +146,11 @@ mod tests {
         }
     }
 
-    fn lookup_one_hot<Table: absolut::OneHot<16>>(input: &[u8; 16]) -> [u8; 16] {
+    fn lookup_one_hot<Table: absolut::OneHot>(input: &[u8; 16]) -> [u8; 16] {
         lookup_one_x::<true>(input, &Table::LO, &Table::HI)
     }
 
-    fn lookup_one_cold<Table: absolut::OneCold<16>>(input: &[u8; 16]) -> [u8; 16] {
+    fn lookup_one_cold<Table: absolut::OneCold>(input: &[u8; 16]) -> [u8; 16] {
         lookup_one_x::<false>(input, &Table::LO, &Table::HI)
     }
 
