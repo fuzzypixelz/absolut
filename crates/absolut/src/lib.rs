@@ -5,15 +5,14 @@ pub use absolut_macros::general;
 pub use absolut_macros::one_cold;
 pub use absolut_macros::one_hot;
 
-pub trait OneCold {
+pub trait OneOf8 {
     const LO: [u8; 16];
     const HI: [u8; 16];
 }
 
-pub trait OneHot {
-    const LO: [u8; 16];
-    const HI: [u8; 16];
-}
+pub trait OneHot: OneOf8 {}
+
+pub trait OneCold: OneOf8 {}
 
 pub trait Composite {
     const Q0: [u8; 64];

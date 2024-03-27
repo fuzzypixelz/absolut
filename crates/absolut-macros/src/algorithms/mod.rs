@@ -10,6 +10,7 @@ pub mod composite;
 pub mod general;
 pub mod one_cold;
 pub mod one_hot;
+pub mod one_of_8;
 
 mod solver;
 

@@ -120,10 +120,12 @@ impl Builder for GeneralBuilder {
                         )*
                     }
 
-                    impl ::absolut::OneHot for #ident {
+                    impl ::absolut::OneOf8 for #ident {
                         const LO: [u8; 16] = [#(#lo, )*];
                         const HI: [u8; 16] = [#(#hi, )*];
                     }
+
+                    impl ::absolut::OneHot for #ident {}
                 };
 
                 Ok(syntax)

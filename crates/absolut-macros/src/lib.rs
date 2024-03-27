@@ -7,12 +7,12 @@ use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
 pub fn one_hot(args: TokenStream, tokens: TokenStream) -> TokenStream {
-    driver::driver::<crate::algorithms::one_hot::OneHotBuilder>(args, tokens)
+    driver::driver::<crate::algorithms::one_of_8::OneOf8Builder</* HOT? */ true>>(args, tokens)
 }
 
 #[proc_macro_attribute]
 pub fn one_cold(args: TokenStream, tokens: TokenStream) -> TokenStream {
-    driver::driver::<crate::algorithms::one_cold::OneColdBuilder>(args, tokens)
+    driver::driver::<crate::algorithms::one_of_8::OneOf8Builder</* HOT? */ false>>(args, tokens)
 }
 
 #[proc_macro_attribute]
