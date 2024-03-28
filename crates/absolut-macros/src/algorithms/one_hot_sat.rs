@@ -14,11 +14,11 @@ use crate::{
 
 use super::{Bytes, Class};
 
-pub struct GeneralBuilder {
+pub struct OneHotSATBuilder {
     table: HashMap<Bytes, Class>,
 }
 
-impl Builder for GeneralBuilder {
+impl Builder for OneHotSATBuilder {
     fn new(_args: TokenStream) -> Self {
         Self {
             table: HashMap::with_capacity(256),
@@ -121,8 +121,8 @@ impl Builder for GeneralBuilder {
                     }
 
                     impl ::absolut::OneOf8 for #ident {
-                        const LO: [u8; 16] = [#(#lo, )*];
-                        const HI: [u8; 16] = [#(#hi, )*];
+                        const TABLE_LOW_NIBBLES: [u8; 16] = [#(#lo, )*];
+                        const TABLE_HIGH_NIBBLES: [u8; 16] = [#(#hi, )*];
                     }
 
                     impl ::absolut::OneHot for #ident {}

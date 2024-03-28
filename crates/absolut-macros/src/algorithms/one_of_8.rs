@@ -132,8 +132,8 @@ impl<const HOT: bool> Builder for OneOf8Builder<HOT> {
             }
 
             impl ::absolut::OneOf8 for #ident {
-                const LO: [u8; #LANES] = [#(#table_lo, )*];
-                const HI: [u8; #LANES] = [#(#table_hi, )*];
+                const TABLE_LOW_NIBBLES: [u8; #LANES] = [#(#table_lo, )*];
+                const TABLE_HIGH_NIBBLES: [u8; #LANES] = [#(#table_hi, )*];
             }
 
             impl #algorithm for #ident {}

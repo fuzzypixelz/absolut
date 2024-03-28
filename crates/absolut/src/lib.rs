@@ -1,9 +1,10 @@
 extern crate self as absolut;
 
 pub use absolut_macros::composite;
-pub use absolut_macros::general;
 pub use absolut_macros::one_cold;
 pub use absolut_macros::one_hot;
+#[cfg(feature = "sat")]
+pub use absolut_macros::one_hot_sat;
 
 pub trait OneOf8 {
     const TABLE_LOW_NIBBLES: [u8; 16];
@@ -274,9 +275,9 @@ mod tests {
 
         test_ident!(absolut::one_cold, lookup_one_cold);
         test_ident!(absolut::one_hot, lookup_one_hot);
-        test_ident!(absolut::general, lookup_one_hot);
-        test_ident!(absolut::general(powers_of_two), lookup_one_hot);
         test_ident!(absolut::composite, lookup_composite);
+        #[cfg(feature = "sat")]
+        test_ident!(absolut::one_hot_sat, lookup_one_hot);
     }
 
     #[test]
@@ -329,8 +330,8 @@ mod tests {
 
         test_json!(absolut::one_cold, lookup_one_cold);
         test_json!(absolut::one_hot, lookup_one_hot);
-        test_json!(absolut::general, lookup_one_hot);
-        test_json!(absolut::general(powers_of_two), lookup_one_hot);
         test_json!(absolut::composite, lookup_composite);
+        #[cfg(feature = "sat")]
+        test_json!(absolut::one_hot_sat, lookup_one_hot);
     }
 }

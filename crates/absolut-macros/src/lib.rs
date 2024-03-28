@@ -20,8 +20,8 @@ pub fn composite(args: TokenStream, tokens: TokenStream) -> TokenStream {
     driver::driver::<crate::algorithms::composite::CompositeBuilder>(args, tokens)
 }
 
-#[cfg(feature = "general")]
+#[cfg(feature = "sat")]
 #[proc_macro_attribute]
-pub fn general(args: TokenStream, tokens: TokenStream) -> TokenStream {
-    driver::driver::<crate::algorithms::general::GeneralBuilder>(args, tokens)
+pub fn one_hot_sat(args: TokenStream, tokens: TokenStream) -> TokenStream {
+    driver::driver::<crate::algorithms::one_hot_sat::OneHotSATBuilder>(args, tokens)
 }

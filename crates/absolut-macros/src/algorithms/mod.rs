@@ -6,10 +6,8 @@ use syn::{
 };
 
 pub mod composite;
-#[cfg(feature = "general")]
-pub mod general;
-pub mod one_cold;
-pub mod one_hot;
+#[cfg(feature = "sat")]
+pub mod one_hot_sat;
 pub mod one_of_8;
 
 mod solver;

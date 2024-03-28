@@ -48,10 +48,7 @@ impl Builder for CompositeBuilder {
             Some(value) => value,
         };
 
-        let mut q1 = [wildcard_value; 64];
-        let mut q2 = [wildcard_value; 64];
-        let mut q3 = [wildcard_value; 64];
-        let mut q4 = [wildcard_value; 64];
+        let mut quarters = [[wildcard_value; 64]; 4];
 
         class_vars.insert(wildcard.name.as_str(), wildcard_value);
 
@@ -82,10 +79,10 @@ impl Builder for CompositeBuilder {
                 };
 
                 match byte {
-                    0..=63 => q1[byte as usize] = value,
-                    64..=127 => q2[byte as usize - 64] = value,
-                    128..=191 => q3[byte as usize - 128] = value,
-                    192..=255 => q4[byte as usize - 192] = value,
+                    0..=63 => quarters[0][byte as usize] = value,
+                    64..=127 => quarters[1][byte as usize - 64] = value,
+                    128..=191 => quarters[2][byte as usize - 128] = value,
+                    192..=255 => quarters[3][byte as usize - 192] = value,
                 };
             }
         }
@@ -96,6 +93,8 @@ impl Builder for CompositeBuilder {
             quote!(#name = #byte)
         });
 
+        let [q0, q1, q2, q3] = quarters;
+
         let syntax = quote! {
             enum #ident {
                 #(#variants,
@@ -103,10 +102,12 @@ impl Builder for CompositeBuilder {
             }
 
             impl ::absolut::Composite for #ident {
-                const Q0: [u8; 64] = [#(#q1, )*];
-                const Q1: [u8; 64] = [#(#q2, )*];
-                const Q2: [u8; 64] = [#(#q3, )*];
-                const Q3: [u8; 64] = [#(#q4, )*];
+                const TABLE_QUARTERS: [[u8; 64]; 4] = [
+                    [#(#q0, )*],
+                    [#(#q1, )*],
+                    [#(#q2, )*],
+                    [#(#q3, )*]
+                ];
             }
         };
 

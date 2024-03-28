@@ -17,5 +17,5 @@ quote = "1.0.31"
 varisat = { version = "0.2.2", optional = true }
 
 [features]
-default = ["general"]
-general = ["dep:varisat"]
+default = ["sat"]
+sat = ["dep:varisat"]
