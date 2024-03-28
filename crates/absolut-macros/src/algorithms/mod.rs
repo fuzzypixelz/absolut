@@ -10,7 +10,7 @@ pub mod composite;
 #[cfg(feature = "sat")]
 pub mod one_hot_sat;
 pub mod one_of_8;
-
+#[cfg(feature = "sat")]
 mod solver;
 
 pub trait Algorithm {
@@ -71,6 +71,7 @@ impl Bytes {
         }
     }
 
+    #[cfg(feature = "sat")]
     pub fn contains(&self, byte: &u8) -> bool {
         match self {
             Bytes::Singleton(b) => byte == b,
