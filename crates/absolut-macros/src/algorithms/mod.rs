@@ -1,5 +1,6 @@
 extern crate proc_macro;
 
+use proc_macro::TokenStream;
 use syn::{
     parse::{Parse, ParseStream},
     LitByte, Token,
@@ -11,6 +12,19 @@ pub mod one_hot_sat;
 pub mod one_of_8;
 
 mod solver;
+
+pub trait Algorithm {
+    fn new(args: TokenStream) -> Self;
+
+    fn map(&mut self, bytes: Bytes, class: Class);
+
+    fn generate(
+        self,
+        wildcard: Class,
+        ident: syn::Ident,
+        span: proc_macro2::Span,
+    ) -> syn::Result<proc_macro2::TokenStream>;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Nibbles {

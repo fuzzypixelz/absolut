@@ -10,28 +10,26 @@ use proc_macro2::{Ident, Span};
 
 use quote::quote;
 
-use crate::{algorithms::Nibbles, driver::Builder};
-
-use super::{Bytes, Class};
+use crate::algorithms::{Algorithm, Bytes, Class, Nibbles};
 
 const LANES: usize = 16;
 
-pub struct OneOf8Builder<const HOT: bool> {
+pub struct OneOf8Algorithm<const HOT: bool> {
     table: HashMap<Bytes, Class>,
 }
 
-impl<const HOT: bool> Builder for OneOf8Builder<HOT> {
+impl<const HOT: bool> Algorithm for OneOf8Algorithm<HOT> {
     fn new(_args: TokenStream) -> Self {
         Self {
             table: HashMap::with_capacity(256),
         }
     }
 
-    fn insert(&mut self, bytes: Bytes, class: Class) {
+    fn map(&mut self, bytes: Bytes, class: Class) {
         let _ = self.table.insert(bytes, class);
     }
 
-    fn build(
+    fn generate(
         self,
         wildcard: Class,
         ident: syn::Ident,

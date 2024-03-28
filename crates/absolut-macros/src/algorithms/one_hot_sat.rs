@@ -7,29 +7,24 @@ use proc_macro2::{Ident, Span};
 
 use quote::quote;
 
-use crate::{
-    algorithms::{solver, Nibbles},
-    driver::Builder,
-};
+use crate::algorithms::{solver, Algorithm, Bytes, Class, Nibbles};
 
-use super::{Bytes, Class};
-
-pub struct OneHotSATBuilder {
+pub struct OneHotSATAlgorithm {
     table: HashMap<Bytes, Class>,
 }
 
-impl Builder for OneHotSATBuilder {
+impl Algorithm for OneHotSATAlgorithm {
     fn new(_args: TokenStream) -> Self {
         Self {
             table: HashMap::with_capacity(256),
         }
     }
 
-    fn insert(&mut self, bytes: Bytes, class: Class) {
+    fn map(&mut self, bytes: Bytes, class: Class) {
         let _ = self.table.insert(bytes, class);
     }
 
-    fn build(
+    fn generate(
         self,
         wildcard: Class,
         ident: syn::Ident,

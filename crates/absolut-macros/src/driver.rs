@@ -6,15 +6,15 @@ use syn::{parse::Parse, parse_macro_input, spanned::Spanned, Error, Expr, ItemEn
 
 use quote::quote;
 
-use crate::algorithms::{Bytes, Class};
+use crate::algorithms::{Algorithm, Bytes, Class};
 
 const VARIANT_ATTR_MATCHES: &str = "matches";
 const VARIANT_ATTR_WILDCARD: &str = "wildcard";
 
-pub fn driver<B: Builder>(args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn driver<A: Algorithm>(args: TokenStream, item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as ItemEnum);
 
-    let mut builder = B::new(args);
+    let mut algo = A::new(args);
     let mut wildcard = None;
 
     for Variant {
@@ -65,7 +65,7 @@ pub fn driver<B: Builder>(args: TokenStream, item: TokenStream) -> TokenStream {
                     Err(err) => return err.into_compile_error().into(),
                 };
 
-                builder.insert(bytes, class.clone());
+                algo.map(bytes, class.clone());
             } else if attr.path().is_ident(VARIANT_ATTR_WILDCARD) {
                 // FIXME(fuzzypixelz): we don't check that `wildcard` has no arguments
 
@@ -95,19 +95,8 @@ pub fn driver<B: Builder>(args: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = item.attrs;
     let ident = item.ident;
 
-    match builder.build(wildcard, ident, span) {
+    match algo.generate(wildcard, ident, span) {
         Ok(syntax) => quote!(#(#attrs)* #[repr(u8)] #vis #syntax).into(),
         Err(error) => error.into_compile_error().into(),
     }
-}
-
-pub trait Builder {
-    fn new(args: TokenStream) -> Self;
-    fn insert(&mut self, bytes: Bytes, class: Class);
-    fn build(
-        self,
-        wildcard: Class,
-        ident: syn::Ident,
-        span: proc_macro2::Span,
-    ) -> syn::Result<proc_macro2::TokenStream>;
 }

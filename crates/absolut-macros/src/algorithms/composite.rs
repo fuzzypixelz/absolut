@@ -7,26 +7,24 @@ use proc_macro2::{Ident, Span};
 
 use quote::quote;
 
-use crate::driver::Builder;
+use crate::algorithms::{Algorithm, Bytes, Class};
 
-use super::{Bytes, Class};
-
-pub struct CompositeBuilder {
+pub struct CompositeAlgorithm {
     table: HashMap<Bytes, Class>,
 }
 
-impl Builder for CompositeBuilder {
+impl Algorithm for CompositeAlgorithm {
     fn new(_args: TokenStream) -> Self {
         Self {
             table: HashMap::with_capacity(256),
         }
     }
 
-    fn insert(&mut self, bytes: Bytes, class: Class) {
+    fn map(&mut self, bytes: Bytes, class: Class) {
         let _ = self.table.insert(bytes, class);
     }
 
-    fn build(
+    fn generate(
         self,
         wildcard: Class,
         ident: syn::Ident,
