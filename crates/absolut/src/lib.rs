@@ -6,8 +6,8 @@ pub use absolut_macros::one_cold;
 pub use absolut_macros::one_hot;
 
 pub trait OneOf8 {
-    const LO: [u8; 16];
-    const HI: [u8; 16];
+    const TABLE_LOW_NIBBLES: [u8; 16];
+    const TABLE_HIGH_NIBBLES: [u8; 16];
 }
 
 pub trait OneHot: OneOf8 {}
@@ -15,10 +15,7 @@ pub trait OneHot: OneOf8 {}
 pub trait OneCold: OneOf8 {}
 
 pub trait Composite {
-    const Q0: [u8; 64];
-    const Q1: [u8; 64];
-    const Q2: [u8; 64];
-    const Q3: [u8; 64];
+    const TABLE_QUARTERS: [[u8; 64]; 4];
 }
 
 #[cfg(test)]
@@ -146,11 +143,11 @@ mod tests {
     }
 
     fn lookup_one_hot<Table: absolut::OneHot>(input: &[u8; 16]) -> [u8; 16] {
-        lookup_one_x::<true>(input, &Table::LO, &Table::HI)
+        lookup_one_x::<true>(input, &Table::TABLE_LOW_NIBBLES, &Table::TABLE_HIGH_NIBBLES)
     }
 
     fn lookup_one_cold<Table: absolut::OneCold>(input: &[u8; 16]) -> [u8; 16] {
-        lookup_one_x::<false>(input, &Table::LO, &Table::HI)
+        lookup_one_x::<false>(input, &Table::TABLE_LOW_NIBBLES, &Table::TABLE_HIGH_NIBBLES)
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -160,10 +157,10 @@ mod tests {
             vdupq_n_u8, veorq_u8, vld1q_u8, vld1q_u8_x4, vorrq_u8, vqtbl4q_u8, vst1q_u8,
         };
 
-        let v_table_q1 = vld1q_u8_x4(Table::Q0.as_ptr());
-        let v_table_q2 = vld1q_u8_x4(Table::Q1.as_ptr());
-        let v_table_q3 = vld1q_u8_x4(Table::Q2.as_ptr());
-        let v_table_q4 = vld1q_u8_x4(Table::Q3.as_ptr());
+        let v_table_q1 = vld1q_u8_x4(Table::TABLE_QUARTERS[0].as_ptr());
+        let v_table_q2 = vld1q_u8_x4(Table::TABLE_QUARTERS[1].as_ptr());
+        let v_table_q3 = vld1q_u8_x4(Table::TABLE_QUARTERS[2].as_ptr());
+        let v_table_q4 = vld1q_u8_x4(Table::TABLE_QUARTERS[3].as_ptr());
 
         let v_input = vld1q_u8(input.as_ptr().cast());
         let v_input_q1 = v_input;
@@ -191,10 +188,10 @@ mod tests {
 
         for (index, byte) in input.iter().enumerate() {
             lookup[index] = match byte {
-                0..=63 => Table::Q0[*byte as usize],
-                64..=127 => Table::Q1[*byte as usize - 64],
-                128..=191 => Table::Q2[*byte as usize - 128],
-                192..=255 => Table::Q3[*byte as usize - 192],
+                0..=63 => Table::TABLE_QUARTERS[0][*byte as usize],
+                64..=127 => Table::TABLE_QUARTERS[1][*byte as usize - 64],
+                128..=191 => Table::TABLE_QUARTERS[2][*byte as usize - 128],
+                192..=255 => Table::TABLE_QUARTERS[3][*byte as usize - 192],
             };
         }
 
