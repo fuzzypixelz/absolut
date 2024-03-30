@@ -25,4 +25,44 @@ The goal being to avoid the need to
 [hardcode manually-computed](https://github.com/simd-lite/simd-json/blob/main/src/impls/sse42/stage1.rs#L22) 
 SIMD lookup tables, thus enabling a wider audience to utilize these techniques more easily.
 
+## How?
+
+Absolut is essentially a set of Procedural Macros that accept byte-to-byte mapping descriptions in the form
+of Rust enums:
+
+```rust
+#[absolut::one_hot]
+pub enum JsonTable {
+    #[matches(b',')]
+    Comma,
+    #[matches(b':')]
+    Colon,
+    #[matches(b'[' | b']' | b'{' | b'}')]
+    Brackets,
+    #[matches(b'\r' | b'\n' | b'\t')]
+    Control,
+    #[matches(b' ')]
+    Space,
+    #[wildcard]
+    Other,
+}
+```
+
+The above `JsonTable` enum encodes the following one-to-one mapping:
+
+| Input                    | Output   |
+|------------------------- |----------|
+| `0x2C`                   | Comma    |
+| `0x3A`                   | Colon    |
+| `0x5B, 0x5D, 0x7B, 0x7D` | Brackets |
+| `0xD, 0xA, 0x9`          | Control  |
+| `0x20`                   | Space    |
+| `*`                      | Other    |
+
+Where `*` denotes all other bytes not explicitly mapped.
+
+Mapping results needn't be explictly defined as Absolut will solve for them automatically.
+In the previous code snippet, the expression `JsonTable::Space as u8` evaluates to the
+output byte when performing a table lookup on `0x20`.
+
 [^1]: [Parsing Gigabytes of JSON per Second](https://arxiv.org/abs/1902.08318)
