@@ -1,6 +1,6 @@
 # Absolut
 
-Absolut stands for "**A**utogenerated **B**ytewise **S**IMD-**O**ptimized **L**ook-**U**p **T**ables".
+Absolut stands for "**A**utogenerated **B**ytewise **S**IMD-**O**ptimized **L**ook-**U**p **T**ables"[^acronym].
 The following is a breakdown of this jargon:
 
 - **Bytewise Lookup Table**: One-to-one mappings between sets of bytes.
@@ -12,7 +12,7 @@ The following is a breakdown of this jargon:
 ## Why?
 
 SIMD instructions allow for greater data parallelism when performing table lookups on bytes. This is
-has proved incredibly useful for high-performance data processing[^1].
+has proved incredibly useful for high-performance data processing[^simdjson].
 
 Unfortunately, SIMD table lookup instructions (or byte suffling instructions) operate on tables too small
 to cover the entire 8-bit integer space. These tables typically have a size of 16 on x86_64, while
@@ -63,4 +63,5 @@ Mapping results needn't be explictly defined as Absolut will solve for them auto
 In the previous code snippet, the expression `JsonTable::Space as u8` evaluates to the
 output byte when performing a table lookup on `0x20`.
 
-[^1]: [Parsing Gigabytes of JSON per Second](https://arxiv.org/abs/1902.08318)
+[^acronym]: Incidentally, "absolut" means "absolute" in French
+[^simdjson]: [Parsing Gigabytes of JSON per Second](https://arxiv.org/abs/1902.08318).
