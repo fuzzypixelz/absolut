@@ -63,5 +63,5 @@ Mapping results needn't be explictly defined as Absolut will solve for them auto
 In the previous code snippet, the expression `JsonTable::Space as u8` evaluates to the
 output byte when performing a table lookup on `0x20`.
 
-[^acronym]: Incidentally, "absolut" means "absolute" in French
+[^acronym]: Incidentally, "absolut" also means "absolute" in French.
 [^simdjson]: [Parsing Gigabytes of JSON per Second](https://arxiv.org/abs/1902.08318).
