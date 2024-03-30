@@ -16,7 +16,7 @@ The following is a breakdown of this jargon:
 SIMD instructions allow for greater data parallelism when performing table lookups on bytes. This is
 has proved incredibly useful for high-performance data processing[^1].
 
-Unfortunately, table lookup instructions (or byte suffling instructions) operate on tables too small
+Unfortunately, SIMD table lookup instructions (or byte suffling instructions) operate on tables too small
 to cover the entire 8-bit integer space. These tables typically have a size of 16 on x86_64, while
 on AArch64 tables of up to 64 elements are supported.
 
