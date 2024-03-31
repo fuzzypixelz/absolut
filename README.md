@@ -164,7 +164,7 @@ at least vaguely familiar with how the algorithm at play works, it would be diff
 for them to figure out how to change the mapping in such a way that it becomes satisfiable
 _and_ stay useful for their purposes.
 
-### No SIMD lookup routines
+### SIMD lookup routines
 
 Absolut currently does not provide SIMD implementations of lookup routines for the generated
 lookup tables. However, the library tests contain lookup routines for SSSE3 and NEON.
