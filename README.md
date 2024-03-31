@@ -116,8 +116,9 @@ fn lookup(input: &[u8; 16], output: [u8; 16]) {
   for (index, byte) in input.iter().copied().enumerate() {
     let low_nibble = byte & 0b1111;
     let high_nibble = byte >> 4;
-    // The OneCold trait implemented on `JsonTable` defines the same associated constant tables. 
-    // However, note how bitwise OR is used instead of bitwise AND in the `one_hot` example
+    // The OneCold trait implemented on `JsonTable` defines the same associated 
+    // constant tables. However, note how bitwise OR is used instead of bitwise 
+    // AND in the `one_hot` example
     let low_nibble_lookup = JsonTable::TABLE_LOW_NIBBLES[low_nibble as usize];
     let high_nibble_lookup = JsonTable::TABLE_HIGH_NIBBLES[high_nibble as usize];
     output[index] = low_nibble_lookup | high_nibble_lookup;
@@ -140,7 +141,8 @@ The following code snippet illustrates how `TABLE_QUARTERS` is to be used:
 ```rust
 fn lookup(input: &[u8; 16], output: [u8; 16]) {
   for (index, byte) in input.iter().copied().enumerate() {
-    // Input bytes have to be mapped into the range `0..=63` before indexing the table quarters
+    // Input bytes have to be mapped into the range `0..=63` before 
+    // indexing the table quarters
     lookup[index] = match byte {
         0..=63 => Table::TABLE_QUARTERS[0][*byte as usize],
         64..=127 => Table::TABLE_QUARTERS[1][*byte as usize - 64],
