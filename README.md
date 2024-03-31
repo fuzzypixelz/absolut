@@ -116,7 +116,7 @@ fn lookup(input: &[u8; 16], output: [u8; 16]) {
   for (index, byte) in input.iter().copied().enumerate() {
     let low_nibble = byte & 0b1111;
     let high_nibble = byte >> 4;
-    // The OneCold trait implemented on `JsonTable` defines the same associated 
+    // The `OneCold` trait implemented on `JsonTable` defines the same associated 
     // constant tables. However, note how bitwise OR is used instead of bitwise 
     // AND in the `one_hot` example
     let low_nibble_lookup = JsonTable::TABLE_LOW_NIBBLES[low_nibble as usize];
