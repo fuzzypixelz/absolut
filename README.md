@@ -1,6 +1,6 @@
 # Absolut
 
-Absolut stands for "**A**utogenerated **B**ytewise **S**IMD-**O**ptimized **L**ook-**U**p **T**ables"[^acronym].
+Absolut stands for "**A**utogenerated **B**ytewise **S**IMD-**O**ptimized **L**ook-**U**p **T**ables".
 The following is a breakdown of this jargon:
 
 - **Bytewise Lookup Table**: One-to-one mappings between sets of bytes.
@@ -12,7 +12,7 @@ The following is a breakdown of this jargon:
 ## Why?
 
 SIMD instructions allow for greater data parallelism when performing table lookups on bytes. This is
-has proved incredibly useful for high-performance data processing[^simdjson].
+has proved incredibly useful for [high-performance data processing](https://arxiv.org/abs/1902.08318).
 
 Unfortunately, SIMD table lookup instructions (or byte shuffling instructions) operate on tables too small
 to cover the entire 8-bit integer space. These tables typically have a size of 16 on x86_64, while
@@ -63,95 +63,10 @@ Mapping results needn't be explicitly defined as Absolut will solve for them aut
 In the previous code snippet, the expression `JsonTable::Space as u8` evaluates to the
 output byte when performing a table lookup on `0x20`.
 
-## Algorithms
-
 Absolut supports multiple techniques for constructing SIMD lookup tables called _algorithms_.
 Each algorithm is implemented as a procedural macro that accepts byte-to-byte mappings 
-described using enums with attribute-annotated variants as illustrated [above](#how).
-The following is an enumeration of all (currently) supported algorithms.
-
-### `absolut::one_hot`
-
-The `one_hot` algorithm implements the `OneHot` trait on the resulting enum by defining two associated
-`const` arrays of type `[u8; 16]`: `TABLE_LOW_NIBBLES` and `TABLE_HIGH_NIBBLES`.
-The following function (using non-vectorized code for demonstration purposes) 
-uses this pair of tables to perform a lookup on an array of bytes using `JsonTable`:
-
-```rust
-fn lookup(input: &[u8; 16], output: [u8; 16]) {
-  for (index, byte) in input.iter().copied().enumerate() {
-    let low_nibble = byte & 0b1111;
-    let high_nibble = byte >> 4;
-    let low_nibble_lookup = JsonTable::TABLE_LOW_NIBBLES[low_nibble as usize];
-    let high_nibble_lookup = JsonTable::TABLE_HIGH_NIBBLES[high_nibble as usize];
-    output[index] = low_nibble_lookup & high_nibble_lookup;
-  }
-}
-```
-
-The name `one_hot` refers to the [One-Hot](https://en.wikipedia.org/wiki/One-hot) binary encoding,
-where at most one bit is 1 and all the others are 0. For the `one_hot` algorithms, all mapping outputs
-follow the One-hot encoding (thus being powers of two). Naturally, the wildcard is always `0x0`.
-
-Consequently, the `one_hot` algorithm only supports mappings where the range (i.e. the set of all possible outputs)
-contains no more than 9 elements (including the wildcard).
-
-### `absolut::one_hot_sat`
-
-The `one_hot_sat` algorithm uses an SAT solver to workaround the limitations of `one_hot`,
-thus supporting more than 9 possible output values that needn't necessarily be powers of two.
-The two algorithms produce functionally equivalent lookup tables.
-The difference is that `one_hot_sat` boasts a much larger solution space.
-
-### `absolut::one_cold`
-
-The `one_cold` algorithm is quite similar to the `one_cold` algorithm.
-It uses the One-cold encoding for output values instead of the One-hot encoding, 
-where at most one bit is 0 and all the others are 1. In this case, the wildcard is always `0xFF`.
-
-If `JsonTable` where generated using `#[absolut::one_cold]`, it would be used in the following way:
-
-```rust
-fn lookup(input: &[u8; 16], output: [u8; 16]) {
-  for (index, byte) in input.iter().copied().enumerate() {
-    let low_nibble = byte & 0b1111;
-    let high_nibble = byte >> 4;
-    // The `OneCold` trait implemented on `JsonTable` defines the same associated 
-    // constant tables. However, note how bitwise OR is used instead of bitwise 
-    // AND in the `one_hot` example
-    let low_nibble_lookup = JsonTable::TABLE_LOW_NIBBLES[low_nibble as usize];
-    let high_nibble_lookup = JsonTable::TABLE_HIGH_NIBBLES[high_nibble as usize];
-    output[index] = low_nibble_lookup | high_nibble_lookup;
-  }
-}
-```
-
-### `absolut::composite`
-
-The `composite` algorithm supports arbitrary byte-to-byte mappings (i.e. every possible mapping has a solution).
-The downside of this approach is that it only works on AArch64 as it needs _four_ 64-element lookup tables.
-Moreover, the use of four different table lookup instructions may[^arbitrary] or may not[^fast-lexer] lead to disappointing performance.
-
-The `absolut::composite` procedural macro defines an associated constant `TABLE_QUARTERS` 
-of type `[[u8; 64]; 4]` containing four different lookup tables. 
-Each table is responsible for the mapping of a quarter of the set of all bytes.
-
-The following code snippet illustrates how `TABLE_QUARTERS` is to be used:
-
-```rust
-fn lookup(input: &[u8; 16], output: [u8; 16]) {
-  for (index, byte) in input.iter().copied().enumerate() {
-    // Input bytes have to be mapped into the range `0..=63` before 
-    // indexing the table quarters
-    lookup[index] = match byte {
-        0..=63 => Table::TABLE_QUARTERS[0][*byte as usize],
-        64..=127 => Table::TABLE_QUARTERS[1][*byte as usize - 64],
-        128..=191 => Table::TABLE_QUARTERS[2][*byte as usize - 128],
-        192..=255 => Table::TABLE_QUARTERS[3][*byte as usize - 192],
-    };
-  }
-}
-```
+described using enums with attribute-annotated variants as illustrated 
+[above with the `absolut::one_hot` algorithm](#how).
 
 ## Known issues
 
@@ -169,11 +84,6 @@ _and_ stay useful for their purposes.
 Absolut currently does not provide SIMD implementations of lookup routines for the generated
 lookup tables. However, the library tests contain lookup routines for SSSE3 and NEON.
 
-## License
+## Licensee
 
-Absolut is open-source software licensed under the terms of the permissive [MIT License](https://opensource.org/licenses/MIT).
-
-[^acronym]: Incidentally, "absolut" also means "absolute" in French.
-[^simdjson]: [Parsing Gigabytes of JSON per Second](https://arxiv.org/abs/1902.08318).
-[^arbitrary]: [Arbitrary byte-to-byte maps using ARM NEON?](https://lemire.me/blog/2019/07/23/arbitrary-byte-to-byte-maps-using-arm-neon/)
-[^fast-lexer]: [Beating the Fastest Lexer Generator in Rust](https://alic.dev/blog/fast-lexing)
+Absolut is open-source software licensed under the terms of the [MIT License](https://opensource.org/licenses/MIT).
