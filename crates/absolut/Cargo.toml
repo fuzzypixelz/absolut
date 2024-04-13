@@ -9,7 +9,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-absolut-macros = { path = "../absolut-macros", version = "0.1.1" }
+absolut-macros.workspace = true
 
 [features]
 sat = ["absolut-macros/sat"]

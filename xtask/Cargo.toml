@@ -1,0 +1,15 @@
+[package]
+name = "xtask"
+repository.workspace = true
+authors.workspace = true
+version.workspace = true
+license-file.workspace = true
+edition.workspace = true
+keywords.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1.0.82"
+toml_edit = "0.22.9"
+xflags = "0.3.2"
+xshell = "0.2.6"

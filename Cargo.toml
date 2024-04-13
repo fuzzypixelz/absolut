@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*"]
+members = ["crates/*", "xtask"]
 
 [workspace.package]
 repository = "https://github.com/fuzzypixelz/absolut"
@@ -9,3 +9,6 @@ version = "0.1.1"
 license-file = "LICENSE"
 edition = "2021"
 keywords = ["simd", "lookup-tables", "macro"]
+
+[workspace.dependencies]
+absolut-macros = { version = "0.1.1", path = "crates/absolut-macros" }
