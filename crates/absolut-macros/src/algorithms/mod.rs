@@ -55,11 +55,8 @@ pub struct Class {
 pub enum Bytes {
     Singleton(u8),
     List(Vec<u8>),
-    /// Inclusive range of bytes, i.e. `start..=end`.
-    Range {
-        start: u8,
-        end: u8,
-    },
+    ExclusiveRange { start: u8, end: u8 },
+    InclusiveRange { start: u8, end: u8 },
 }
 
 impl Bytes {
@@ -67,7 +64,8 @@ impl Bytes {
         match self {
             Bytes::Singleton(b) => vec![*b],
             Bytes::List(v) => v.clone(),
-            Bytes::Range { start, end } => (*start..=*end).collect(),
+            Bytes::ExclusiveRange { start, end } => (*start..*end).collect(),
+            Bytes::InclusiveRange { start, end } => (*start..=*end).collect(),
         }
     }
 
@@ -76,7 +74,8 @@ impl Bytes {
         match self {
             Bytes::Singleton(b) => byte == b,
             Bytes::List(v) => v.contains(byte),
-            Bytes::Range { start, end } => start <= byte && byte <= end,
+            Bytes::ExclusiveRange { start, end } => start <= byte && byte < end,
+            Bytes::InclusiveRange { start, end } => start <= byte && byte <= end,
         }
     }
 }
@@ -91,14 +90,24 @@ impl Parse for Bytes {
 
             if lookahead.peek(Token![..]) {
                 input.parse::<Token![..]>()?;
-                let start = byte;
-                let end = input.parse::<LitByte>()?.value();
 
-                Ok(Self::Range { start, end })
-            } else if lookahead.peek(Token![|]) {
+                if input.lookahead1().peek(Token![=]) {
+                    input.parse::<Token![=]>()?;
+
+                    let start = byte;
+                    let end = input.parse::<LitByte>()?.value();
+
+                    Ok(Self::InclusiveRange { start, end })
+                } else {
+                    let start = byte;
+                    let end = input.parse::<LitByte>()?.value();
+
+                    Ok(Self::ExclusiveRange { start, end })
+                }
+            } else if lookahead.peek(Token![,]) {
                 let mut bytes = vec![byte];
-                while input.lookahead1().peek(Token![|]) {
-                    input.parse::<Token![|]>()?;
+                while input.lookahead1().peek(Token![,]) {
+                    input.parse::<Token![,]>()?;
                     bytes.push(input.parse::<LitByte>()?.value());
                 }
 
