@@ -1,5 +1,5 @@
 #![cfg_attr(doc_auto_cfg, feature(doc_auto_cfg))]
-#![doc = include_str!("../../../README.md")]
+#![doc = include_str!("../README.md")]
 
 extern crate self as absolut;
 
