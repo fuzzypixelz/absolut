@@ -5,10 +5,10 @@ members = ["crates/*", "xtask"]
 [workspace.package]
 repository = "https://github.com/fuzzypixelz/absolut"
 authors = ["Mahmoud Mazouz <hello@fuzzypixelz.com>"]
-version = "0.1.1"
+version = "0.2.1"
 license-file = "LICENSE"
 edition = "2021"
 keywords = ["simd", "lookup-tables", "macro"]
 
 [workspace.dependencies]
-absolut-macros = { version = "0.1.1", path = "crates/absolut-macros" }
+absolut-macros = { version = "0.2.1", path = "crates/absolut-macros" }
