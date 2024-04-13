@@ -9,11 +9,11 @@ use quote::quote;
 
 use crate::algorithms::{solver, Algorithm, Bytes, Class, Nibbles};
 
-pub struct OneHotSATAlgorithm {
+pub struct General {
     table: HashMap<Bytes, Class>,
 }
 
-impl Algorithm for OneHotSATAlgorithm {
+impl Algorithm for General {
     fn new(_args: TokenStream) -> Self {
         Self {
             table: HashMap::with_capacity(256),
@@ -115,12 +115,10 @@ impl Algorithm for OneHotSATAlgorithm {
                         )*
                     }
 
-                    impl ::absolut::OneOf8 for #ident {
+                    impl ::absolut::General for #ident {
                         const TABLE_LOW_NIBBLES: [u8; 16] = [#(#lo, )*];
                         const TABLE_HIGH_NIBBLES: [u8; 16] = [#(#hi, )*];
                     }
-
-                    impl ::absolut::OneHot for #ident {}
                 };
 
                 Ok(syntax)

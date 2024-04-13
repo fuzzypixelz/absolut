@@ -7,6 +7,5 @@ repository = "https://github.com/fuzzypixelz/absolut"
 authors = ["Mahmoud Mazouz <hello@fuzzypixelz.com>"]
 version = "0.1.1"
 license-file = "LICENSE"
-readme = "README.md"
 edition = "2021"
 keywords = ["simd", "lookup-tables", "macro"]
