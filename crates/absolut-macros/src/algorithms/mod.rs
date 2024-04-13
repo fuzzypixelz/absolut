@@ -95,10 +95,10 @@ impl Parse for Bytes {
                 let end = input.parse::<LitByte>()?.value();
 
                 Ok(Self::Range { start, end })
-            } else if lookahead.peek(Token![|]) {
+            } else if lookahead.peek(Token![,]) {
                 let mut bytes = vec![byte];
-                while input.lookahead1().peek(Token![|]) {
-                    input.parse::<Token![|]>()?;
+                while input.lookahead1().peek(Token![,]) {
+                    input.parse::<Token![,]>()?;
                     bytes.push(input.parse::<LitByte>()?.value());
                 }
 
