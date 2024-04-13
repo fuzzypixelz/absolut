@@ -35,14 +35,13 @@ impl Algorithm for CompositeAlgorithm {
         let mut class_generator = ClassGenerator::new(
             self.table.values().filter_map(|c| c.value),
             // TODO(fuzzypixelz): Customize this using an argument
-            true,
+            false,
         );
 
         let wildcard_value = match wildcard.value {
-            None => class_generator.gen().ok_or(
-                // TODO(fuzzypixelz): Set message here
-                syn::Error::new(span, "..."),
-            )?,
+            None => class_generator
+                .gen()
+                .expect("should be able to generate at least one class"),
             Some(value) => value,
         };
 
@@ -60,14 +59,15 @@ impl Algorithm for CompositeAlgorithm {
                                 if class_generator.check(value) {
                                     value
                                 } else {
-                                    // TODO(fuzzypixelz): Set message here
-                                    return Err(syn::Error::new(span, "..."));
+                                    return Err(syn::Error::new(
+                                        span,
+                                        format!("invalid variant value {value}"),
+                                    ));
                                 }
                             }
-                            None => class_generator.gen().ok_or(
-                                // TODO(fuzzypixelz): Set message here
-                                syn::Error::new(span, "..."),
-                            )?,
+                            None => class_generator
+                                .gen()
+                                .ok_or(syn::Error::new(span, "too many variants"))?,
                         };
 
                         class_vars.insert(class.name.as_str(), value);

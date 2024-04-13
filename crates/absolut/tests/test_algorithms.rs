@@ -18,7 +18,7 @@ fn test_ident() {
                 #[matches(b'0'..=b'9')]
                 Digits,
                 #[wildcard]
-                Other = 0,
+                Other,
             }
 
             let input = b"_some_1dent1f13r";

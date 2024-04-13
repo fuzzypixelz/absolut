@@ -79,8 +79,7 @@ impl<const HOT: bool> Algorithm for OneOf8Algorithm<HOT> {
             let bytes = bytes.to_vec();
 
             if !is_product(&bytes) {
-                // TODO(fuzzypixelz): Set message here
-                return Err(syn::Error::new(span, "..."));
+                return Err(syn::Error::new(span, "table is unsatisfiable"));
             }
 
             for byte in bytes {
