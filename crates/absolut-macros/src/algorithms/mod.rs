@@ -8,7 +8,7 @@ use syn::{
 
 pub mod composite;
 #[cfg(feature = "sat")]
-pub mod one_hot_sat;
+pub mod general;
 pub mod one_of_8;
 #[cfg(feature = "sat")]
 mod solver;

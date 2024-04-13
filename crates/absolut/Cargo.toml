@@ -10,3 +10,10 @@ edition.workspace = true
 
 [dependencies]
 absolut-macros = { path = "../absolut-macros", version = "0.1.1" }
+
+[features]
+sat = ["absolut-macros/sat"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "doc_auto_cfg"]

@@ -52,7 +52,7 @@ fn test_ident() {
     test_ident!(absolut::one_hot, lookup_one_hot);
     test_ident!(absolut::composite, lookup_composite);
     #[cfg(feature = "sat")]
-    test_ident!(absolut::one_hot_sat, lookup_one_hot);
+    test_ident!(absolut::general, lookup_general);
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn test_json() {
     test_json!(absolut::one_hot, lookup_one_hot);
     test_json!(absolut::composite, lookup_composite);
     #[cfg(feature = "sat")]
-    test_json!(absolut::one_hot_sat, lookup_one_hot);
+    test_json!(absolut::general, lookup_general);
 }
 
 #[cfg(target_arch = "aarch64")]
@@ -238,6 +238,11 @@ fn lookup_one_hot<Table: absolut::OneHot>(input: &[u8; 16]) -> [u8; 16] {
 
 fn lookup_one_cold<Table: absolut::OneCold>(input: &[u8; 16]) -> [u8; 16] {
     lookup_one_of_8::<false>(input, &Table::TABLE_LOW_NIBBLES, &Table::TABLE_HIGH_NIBBLES)
+}
+
+#[cfg(feature = "sat")]
+fn lookup_general<Table: absolut::General>(input: &[u8; 16]) -> [u8; 16] {
+    lookup_one_of_8::<true>(input, &Table::TABLE_LOW_NIBBLES, &Table::TABLE_HIGH_NIBBLES)
 }
 
 #[cfg(target_arch = "aarch64")]

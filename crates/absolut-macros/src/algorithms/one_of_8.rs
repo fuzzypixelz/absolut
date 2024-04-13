@@ -129,12 +129,10 @@ impl<const HOT: bool> Algorithm for OneOf8Algorithm<HOT> {
                 )*
             }
 
-            impl ::absolut::OneOf8 for #ident {
+            impl #algorithm for #ident {
                 const TABLE_LOW_NIBBLES: [u8; #LANES] = [#(#table_lo, )*];
                 const TABLE_HIGH_NIBBLES: [u8; #LANES] = [#(#table_hi, )*];
             }
-
-            impl #algorithm for #ident {}
         };
 
         Ok(syntax)
