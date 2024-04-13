@@ -5,17 +5,17 @@ fn test_ident() {
             #[$algorithm]
             #[derive(Debug)]
             pub enum Table {
-                #[matches(b'a'..b'o')]
+                #[matches(b'a'..b'p')]
                 Lowercase1,
-                #[matches(b'p'..b'z')]
+                #[matches(b'p'..=b'z')]
                 Lowercase2,
-                #[matches(b'A'..b'O')]
+                #[matches(b'A'..b'P')]
                 Uppercase1,
-                #[matches(b'P'..b'Z')]
+                #[matches(b'P'..=b'Z')]
                 Uppercase2,
                 #[matches(b'_')]
                 Underscore,
-                #[matches(b'0'..b'9')]
+                #[matches(b'0'..=b'9')]
                 Digits,
                 #[wildcard]
                 Other = 0,

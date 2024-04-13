@@ -35,9 +35,9 @@ pub enum JsonTable {
     Comma,
     #[matches(b':')]
     Colon,
-    #[matches(b'[' | b']' | b'{' | b'}')]
+    #[matches(b'[', b']', b'{', b'}')]
     Brackets,
-    #[matches(b'\r' | b'\n' | b'\t')]
+    #[matches(b'\r', b'\n', b'\t')]
     Control,
     #[matches(b' ')]
     Space,
