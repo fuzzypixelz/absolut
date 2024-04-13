@@ -84,6 +84,6 @@ _and_ stay useful for their purposes.
 Absolut currently does not provide SIMD implementations of lookup routines for the generated
 lookup tables. However, the library tests contain lookup routines for SSSE3 and NEON.
 
-## Licensee
+## License
 
 Absolut is open-source software licensed under the terms of the [MIT License](https://opensource.org/licenses/MIT).
